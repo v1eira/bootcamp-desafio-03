@@ -65,6 +65,26 @@ class MeetupController {
 
     return res.json(meetup);
   }
+
+  async delete(req, res) {
+    const user_id = req.userId;
+
+    const meetup = await Meetup.findByPk(req.params.id);
+
+    if (user_id !== meetup.user_id) {
+      return res
+        .status(401)
+        .json({ error: 'User is not the owner of the meetup.' });
+    }
+
+    if (meetup.past) {
+      return res.status(400).json({ error: 'Can not delete past meetups.' });
+    }
+
+    await meetup.destroy();
+
+    return res.send();
+  }
 }
 
 export default new MeetupController();
