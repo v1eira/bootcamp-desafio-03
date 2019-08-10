@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import User from '../models/User';
 import Meetup from '../models/Meetup';
 import Subscription from '../models/Subscription';
+import Notification from '../schemas/Notification';
 
 class SubscriptionController {
   async index(req, res) {
@@ -32,6 +33,15 @@ class SubscriptionController {
     const meetup = await Meetup.findByPk(req.params.meetupId, {
       include: [User],
     });
+    const subscriptionExists = await Subscription.findOne({
+      where: { meetup_id: req.params.meetupId },
+    });
+
+    if (subscriptionExists) {
+      return res
+        .status(400)
+        .json({ error: 'Can not subscribe to the same meetup twice.' });
+    }
 
     if (meetup.user_id === req.userId) {
       return res
@@ -71,7 +81,34 @@ class SubscriptionController {
       meetup_id: meetup.id,
     });
 
+    /* Add Notification */
+    await Notification.create({
+      content: `${user.name} se inscreveu em ${meetup.title}`,
+      user: meetup.user_id,
+    });
+
     return res.json(subscription);
+  }
+
+  async delete(req, res) {
+    const subscription = await Subscription.findByPk(req.params.id);
+    const meetup = await Meetup.findByPk(subscription.meetup_id);
+
+    if (meetup.past) {
+      return res
+        .status(400)
+        .json({ error: 'Can not unsubscribe to past meetups.' });
+    }
+
+    if (subscription.user_id !== req.userId) {
+      return res.status(401).json({
+        error: 'You do not have permission to unsubscribe to this meetup.',
+      });
+    }
+
+    await subscription.destroy();
+
+    return res.json();
   }
 }
 
