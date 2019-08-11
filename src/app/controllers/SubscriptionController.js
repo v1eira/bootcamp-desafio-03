@@ -5,6 +5,8 @@ import Meetup from '../models/Meetup';
 import Subscription from '../models/Subscription';
 import Notification from '../schemas/Notification';
 
+import Mail from '../../lib/Mail';
+
 class SubscriptionController {
   async index(req, res) {
     const subscriptions = await Subscription.findAll({
@@ -81,9 +83,22 @@ class SubscriptionController {
       meetup_id: meetup.id,
     });
 
+    /* Send email */
+    await Mail.sendMail({
+      to: `${meetup.User.name} <${meetup.User.email}>`,
+      subject: `[${meetup.title}] - New subscription`,
+      template: 'subscription',
+      context: {
+        organizer: meetup.User.name,
+        meetup: meetup.title,
+        user: user.name,
+        email: user.email,
+      },
+    });
+
     /* Add Notification */
     await Notification.create({
-      content: `${user.name} se inscreveu em ${meetup.title}`,
+      content: `${user.name} subscribed to ${meetup.title}`,
       user: meetup.user_id,
     });
 
@@ -92,7 +107,10 @@ class SubscriptionController {
 
   async delete(req, res) {
     const subscription = await Subscription.findByPk(req.params.id);
-    const meetup = await Meetup.findByPk(subscription.meetup_id);
+    const meetup = await Meetup.findByPk(subscription.meetup_id, {
+      include: [User],
+    });
+    const user = await User.findByPk(req.userId);
 
     if (meetup.past) {
       return res
@@ -107,6 +125,19 @@ class SubscriptionController {
     }
 
     await subscription.destroy();
+
+    /* Send email */
+    await Mail.sendMail({
+      to: `${meetup.User.name} <${meetup.User.email}>`,
+      subject: `[${meetup.title}] - Subscription cancellation`,
+      template: 'cancellation',
+      context: {
+        organizer: meetup.User.name,
+        meetup: meetup.title,
+        user: user.name,
+        email: user.email,
+      },
+    });
 
     return res.json();
   }
