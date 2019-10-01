@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import { isBefore, startOfDay, endOfDay, parseISO } from 'date-fns';
 import Meetup from '../models/Meetup';
 import User from '../models/User';
+import File from '../models/File';
 
 class MeetupController {
   async index(req, res) {
@@ -19,8 +20,18 @@ class MeetupController {
 
     const meetups = await Meetup.findAll({
       where,
+      attributes: { exclude: ['UserId', 'user_id', 'file_id'] },
       order: [['createdAt', 'DESC']],
-      include: [User],
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name', 'email'],
+        },
+        {
+          model: File,
+          attributes: ['id', 'url', 'path'],
+        },
+      ],
       limit: 10,
       offset: (page - 1) * 10,
     });
