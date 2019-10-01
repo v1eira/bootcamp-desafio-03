@@ -24,12 +24,14 @@ class MeetupController {
       order: [['createdAt', 'DESC']],
       include: [
         {
-          model: User,
-          attributes: ['id', 'name', 'email'],
+          model: File,
+          as: 'banner',
+          attributes: ['id', 'url', 'path'],
         },
         {
-          model: File,
-          attributes: ['id', 'url', 'path'],
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'email'],
         },
       ],
       limit: 10,
@@ -56,11 +58,9 @@ class MeetupController {
       return res.status(400).json({ error: 'Meetup date invalid' });
     }
 
-    const user_id = req.userId;
-
     const meetup = await Meetup.create({
       ...req.body,
-      user_id,
+      user_id: req.userId,
     });
 
     return res.json(meetup);
@@ -99,7 +99,30 @@ class MeetupController {
 
     await meetup.update(req.body);
 
-    return res.json(meetup);
+    const {
+      id,
+      title,
+      description,
+      location,
+      date,
+      banner,
+      user,
+    } = await Meetup.findByPk(meetup.id, {
+      include: [
+        {
+          model: File,
+          as: 'banner',
+          attributes: ['id', 'path', 'url'],
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'email'],
+        },
+      ],
+    });
+
+    return res.json({ id, title, description, location, date, banner, user });
   }
 
   async delete(req, res) {
