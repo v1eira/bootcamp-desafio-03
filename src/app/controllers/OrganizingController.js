@@ -20,6 +20,7 @@ class OrganizingController {
           attributes: ['id', 'name', 'email'],
         },
       ],
+      order: [['date', 'DESC']],
     });
 
     return res.json(meetups);
