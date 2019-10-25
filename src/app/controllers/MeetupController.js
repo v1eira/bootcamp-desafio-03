@@ -41,6 +41,25 @@ class MeetupController {
     return res.json(meetups);
   }
 
+  async show(req, res) {
+    const meetup = await Meetup.findOne({
+      where: { id: req.params.id },
+      include: [
+        {
+          model: File,
+          as: 'banner',
+          attributes: ['id', 'url', 'path'],
+        },
+      ],
+    });
+
+    if (!meetup) {
+      return res.status(400).json({ error: 'Meetup does not exists.' });
+    }
+
+    return res.json(meetup);
+  }
+
   async store(req, res) {
     const schema = Yup.object().shape({
       title: Yup.string().required(),
