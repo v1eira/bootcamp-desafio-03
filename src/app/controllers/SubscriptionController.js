@@ -87,7 +87,7 @@ class SubscriptionController {
 
     /* Add Notification */
     await Notification.create({
-      content: `${user.name} subscribed to ${meetup.title}`,
+      content: `${user.name} se inscreveu em ${meetup.title}`,
       user: meetup.user_id,
     });
 
