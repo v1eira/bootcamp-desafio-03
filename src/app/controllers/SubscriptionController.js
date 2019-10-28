@@ -1,6 +1,7 @@
 import { Op } from 'sequelize';
 
 import User from '../models/User';
+import File from '../models/File';
 import Meetup from '../models/Meetup';
 import Subscription from '../models/Subscription';
 import Notification from '../schemas/Notification';
@@ -24,6 +25,17 @@ class SubscriptionController {
             },
           },
           required: true,
+          include: [
+            {
+              model: File,
+              as: 'banner',
+              attributes: ['id', 'url', 'path'],
+            },
+            {
+              model: User,
+              as: 'user',
+            },
+          ],
         },
       ],
       order: [[Meetup, 'date']],
@@ -102,9 +114,7 @@ class SubscriptionController {
 
   async delete(req, res) {
     const subscription = await Subscription.findByPk(req.params.id);
-    const meetup = await Meetup.findByPk(subscription.meetup_id, {
-      include: [User],
-    });
+    const meetup = await Meetup.findByPk(subscription.meetup_id);
     const user = await User.findByPk(req.userId);
 
     if (meetup.past) {
